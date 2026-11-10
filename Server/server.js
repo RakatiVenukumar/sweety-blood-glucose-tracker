@@ -7,7 +7,7 @@ const healthRoutes = require("./src/routes/healthRoutes");
 const notFound = require("./src/middleware/notFound");
 const errorHandler = require("./src/middleware/errorHandler");
 const authRoutes = require("./src/routes/authRoutes");
-
+const readingRoutes = require("./src/routes/readingRoutes");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -38,6 +38,7 @@ app.use("/api/health", healthRoutes);
 
 app.use("/api/auth", authRoutes);
 
+app.use("/api/readings", readingRoutes);
 
 // Handle requests to undefined routes
 app.use(notFound);

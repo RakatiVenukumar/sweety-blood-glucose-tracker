@@ -295,5 +295,152 @@ No actual sample users or glucose readings have been inserted yet.
 - Supabase root certificate is stored in `server/certs/`.
 - Temporary database testing endpoints were removed after verification.
 
-### Pending phases
-Authentication, reading APIs, validation, reports, frontend integration and deployment remain future phases.
+## Phase 4 – Authentication
+
+**Status:** Implementation and initial verification completed.
+
+### Authentication features
+- User registration API implemented.
+- User login API implemented.
+- Passwords securely hashed and verified using bcrypt.
+- JWT access tokens generated using `jsonwebtoken`.
+- Token expiration configured through environment variables.
+- JWT authentication middleware implemented.
+- Protected route access verified using Bearer tokens.
+- Authenticated user ID extracted from the verified JWT.
+- PostgreSQL transaction-local RLS user context integrated using `withTransaction()`.
+
+### API endpoints
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+
+### Security measures
+- Password hashes excluded from API responses.
+- Duplicate email registration prevented.
+- Email addresses normalized to lowercase.
+- Invalid credentials return generic authentication errors.
+- Missing, invalid and expired tokens rejected.
+- User identity derived from verified JWT claims rather than request parameters.
+- Authentication secrets stored in backend environment variables.
+
+### Verification
+- Registration and duplicate-email tests.
+- Login success and invalid-credential tests.
+- JWT verification tests.
+- Protected-route access tests.
+- PostgreSQL transaction-local user-context test.
+
+### Remaining security verification
+- Test actual RLS data isolation with two separate users.
+- Review authentication rate limiting and security edge cases.
+- Perform broader API security testing.
+
+# Phase 5 – Glucose Reading CRUD APIs (Completed)
+
+**Status:** Completed
+
+**Objective:** Build authenticated REST APIs to create, retrieve, update, and delete glucose readings using Express and Supabase PostgreSQL.
+
+## 1. Routes and API Endpoints
+
+All routes are mounted under `/api/readings` and protected by JWT authentication using the `protect` middleware.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/readings` | Create a glucose reading |
+| GET | `/api/readings` | Retrieve all readings belonging to the authenticated user |
+| GET | `/api/readings/:id` | Retrieve a specific reading |
+| PUT | `/api/readings/:id` | Update an existing reading |
+| DELETE | `/api/readings/:id` | Delete a reading |
+
+## 2. Create Reading API
+
+- Accepts `reading_date`, `time_slot`, and `glucose_value`.
+- Validates required fields and date format.
+- Rejects invalid calendar dates and future dates.
+- Allows only four time slots:
+  - `morning`
+  - `after_breakfast`
+  - `after_lunch`
+  - `after_dinner`
+- Accepts integer glucose values between 40 and 600.
+- Gets the user ID from the verified JWT (`req.user.id`).
+- Uses parameterized SQL queries.
+- Returns HTTP 201 on successful creation.
+- Handles duplicate date/time-slot combinations with HTTP 409.
+
+## 3. Get All Readings API
+
+- Retrieves all readings belonging to the authenticated user.
+- Orders readings by `reading_date DESC` and `created_at DESC`.
+- Returns the total count and reading records.
+- Returns HTTP 200, including an empty array when no readings exist.
+
+## 4. Get Reading by ID API
+
+- Retrieves a specific reading using its UUID.
+- Validates the reading ID format.
+- Returns HTTP 200 when found.
+- Returns HTTP 400 for an invalid UUID.
+- Returns HTTP 404 when the reading does not exist or is not accessible to the authenticated user.
+
+## 5. Update Reading API
+
+- Uses the PUT method to update an existing reading.
+- Updates `reading_date`, `time_slot`, and `glucose_value`.
+- Validates the reading ID and input fields.
+- Does not allow modification of `user_id`.
+- Returns HTTP 200 on successful update.
+- Returns HTTP 400 for invalid input.
+- Returns HTTP 404 when the reading is not found or accessible.
+- Returns HTTP 409 when the updated date/time-slot combination conflicts with another reading.
+- Database `updated_at` trigger automatically updates the modification timestamp.
+
+## 6. Delete Reading API
+
+- Deletes a reading using its UUID.
+- Validates the reading ID.
+- Uses `DELETE ... RETURNING id`.
+- Returns HTTP 200 with the deleted reading ID.
+- Returns HTTP 400 for invalid UUIDs.
+- Returns HTTP 404 when the reading does not exist or is not accessible.
+
+## 7. Security and Database Integration
+
+- All reading routes require JWT authentication.
+- User identity is obtained exclusively from the verified JWT (`req.user.id`).
+- All user-specific database operations use `withTransaction(callback, req.user.id)`.
+- The transaction sets the transaction-local PostgreSQL variable `app.current_user_id`.
+- PostgreSQL Row-Level Security (RLS) restricts reading access to the authenticated user.
+- All SQL queries use parameterized values to prevent SQL injection.
+- Passwords and database credentials are never exposed through reading APIs.
+- Reading ownership is never accepted from the request body or URL.
+
+## 8. Testing Completed
+
+Tested using Thunder Client:
+
+- Successful reading creation – HTTP 201.
+- Successful retrieval of all readings – HTTP 200.
+- Successful retrieval by reading ID – HTTP 200.
+- Invalid reading ID – HTTP 400.
+- Successful reading update – HTTP 200.
+- Updated glucose value and `updated_at` timestamp verified.
+- Successful reading deletion – HTTP 200.
+- Authentication protection verified for reading routes.
+
+## 9. Pending Improvements
+
+The following items are intentionally deferred to later phases:
+
+- More comprehensive and centralized input validation.
+- User-timezone-aware date validation and date handling.
+- Consistent validation and error handling across all APIs.
+- Two-user RLS isolation testing and additional security verification.
+- Automated API testing.
+
+## 10. Completion Summary
+
+**Phase 5 is completed.** All five glucose
+
+
