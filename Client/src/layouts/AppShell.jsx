@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -10,10 +10,16 @@ const links = [
 function AppShell() {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentLabel = links.find((link) => link.to === location.pathname)?.label || "Preview";
   const initials = user?.name
     ? user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
     : "SK";
+
+  function handleSignOut() {
+    signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="app-shell">
@@ -61,7 +67,7 @@ function AppShell() {
             <span className="demo-pill"><span className="status-dot" /> Demo mode</span>
             <div className="account-menu">
               <span className="account-name">{user?.name || "Preview mode"}</span>
-              <button className="logout-button" type="button" onClick={signOut}>Log out</button>
+              <button className="logout-button" type="button" onClick={handleSignOut}>Log out</button>
               <span className="avatar-button" aria-hidden="true">{initials}</span>
             </div>
           </div>
