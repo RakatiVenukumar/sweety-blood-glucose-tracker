@@ -6,6 +6,7 @@ require("dotenv").config();
 const healthRoutes = require("./src/routes/healthRoutes");
 const notFound = require("./src/middleware/notFound");
 const errorHandler = require("./src/middleware/errorHandler");
+const authRoutes = require("./src/routes/authRoutes");
 
 const express = require("express");
 const cors = require("cors");
@@ -34,6 +35,9 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 
 app.use("/api/health", healthRoutes); 
+
+app.use("/api/auth", authRoutes);
+
 
 // Handle requests to undefined routes
 app.use(notFound);
