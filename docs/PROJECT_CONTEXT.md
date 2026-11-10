@@ -573,3 +573,78 @@ Report responses contain a `report` object with:
 - Complete two-user RLS isolation testing remains scheduled for Phase 13.
 - Reports currently expose only the current and previous calendar periods
   required by the assignment; arbitrary date-range filters are not included.
+
+## Phase 8 – Premium Frontend Foundation and Visual Design System
+
+### Implementation
+
+The previously empty `Client/` directory now contains a Vite + React
+foundation for the premium Sweety health-tech interface. This phase is visual
+only; authentication, dashboard functionality, readings, and report data
+integration remain deferred to later phases.
+
+Created:
+
+- `client/package.json`
+- `client/vite.config.js`
+- `client/.env.example`
+- `client/index.html`
+- `client/src/main.jsx`
+- `client/src/App.jsx`
+- `client/src/services/apiClient.js`
+- `client/src/layouts/AppShell.jsx`
+- `client/src/pages/FoundationPreview.jsx`
+- `client/src/pages/PlaceholderPage.jsx`
+- `client/src/styles/tokens.css`
+- `client/src/styles/global.css`
+
+### Design system
+
+- Warm ivory and paper surfaces.
+- Deep forest green primary brand color.
+- Muted sage supporting surfaces.
+- Charcoal typography with restrained coral accents.
+- DM Sans and Playfair Display type pairing.
+- Reusable spacing, color, radius, shadow, transition, and focus tokens.
+- Semantic navigation, buttons, cards, chart foundations, and preview states.
+- No purple AI gradients, neon colors, or unnecessary glassmorphism.
+
+### Visual foundation
+
+- Responsive application shell with sidebar navigation and mobile navigation
+  adaptation.
+- Premium brand/header area and route placeholders for dashboard, readings,
+  and reports.
+- Illustrative glucose rhythm card with SVG trend visualization.
+- Weekly chart preview, insight card, progress treatment, and health-oriented
+  empty state.
+- Subtle 3D perspective, layered depth, hover elevation, entrance animation,
+  and `prefers-reduced-motion` support.
+- Explicit demo-data disclaimer; no real health data or tracking behavior is
+  implemented in this phase.
+
+### API and routing foundation
+
+- Central API client reads `VITE_API_URL`.
+- `.env.example` contains only the local backend URL placeholder.
+- React Router routes are prepared for `/`, `/dashboard`, `/readings`, and
+  `/reports`.
+- No authentication state, token storage, API calls, or backend changes were
+  added.
+
+### Verification
+
+- `npm install` completed with zero reported vulnerabilities.
+- `npm run build` passed successfully.
+- Vite development server started successfully.
+- Browser smoke test passed for the rendered shell, semantic navigation, and
+  `/reports` placeholder route.
+- Mobile viewport test at 390px confirmed no horizontal overflow.
+- Desktop browser rendering was inspected through the integrated browser.
+
+### Known limitations
+
+- Authentication UI and functionality are intentionally deferred to Phase 9.
+- Demo chart and insight values are illustrative only.
+- Full browser matrix testing across physical devices is not available in this
+  environment.
