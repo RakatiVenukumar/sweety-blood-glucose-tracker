@@ -1,5 +1,6 @@
 const { withTransaction } = require("../config/db");
 const AppError = require("../utils/AppError");
+const { validateReadingDate } = require("../utils/validators");
 
 const getUserTimezone = async (client, userId) => {
     const result = await client.query(
@@ -31,15 +32,28 @@ const getCalendarParts = (timezone) => {
 
 const formatDate = (date) => date.toISOString().slice(0, 10);
 
-const getReportPeriod = (timezone, previousMonth = false) => {
-    const { year, month } = getCalendarParts(timezone);
+const getReportPeriod = (
+    timezone,
+    previousMonth = false,
+    selectedDate = null
+) => {
+    const calendar = selectedDate
+        ? {
+            year: Number(selectedDate.slice(0, 4)),
+            month: Number(selectedDate.slice(5, 7)),
+            day: Number(selectedDate.slice(8, 10))
+        }
+        : getCalendarParts(timezone);
+    const { year, month, day } = calendar;
     const currentMonthStart = new Date(Date.UTC(year, month - 1, 1));
     const start = previousMonth
         ? new Date(Date.UTC(year, month - 2, 1))
         : currentMonthStart;
     const end = previousMonth
         ? currentMonthStart
-        : new Date(Date.UTC(year, month, 1));
+        : selectedDate
+            ? new Date(Date.UTC(year, month - 1, day + 1))
+            : new Date(Date.UTC(year, month, 1));
 
     return {
         start: formatDate(start),
@@ -52,8 +66,14 @@ const getReportPeriod = (timezone, previousMonth = false) => {
     };
 };
 
-const getDailyPeriod = (timezone) => {
-    const { year, month, day } = getCalendarParts(timezone);
+const getDailyPeriod = (timezone, selectedDate = null) => {
+    const { year, month, day } = selectedDate
+        ? {
+            year: Number(selectedDate.slice(0, 4)),
+            month: Number(selectedDate.slice(5, 7)),
+            day: Number(selectedDate.slice(8, 10))
+        }
+        : getCalendarParts(timezone);
     const start = new Date(Date.UTC(year, month - 1, day));
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 1);
@@ -63,6 +83,18 @@ const getDailyPeriod = (timezone) => {
         end: formatDate(end),
         date: formatDate(start)
     };
+};
+
+const getSelectedDate = (req, timezone) => {
+    if (req.query.date === undefined) {
+        return null;
+    }
+
+    if (Array.isArray(req.query.date)) {
+        throw new AppError("Report date must use YYYY-MM-DD format", 400);
+    }
+
+    return validateReadingDate(req.query.date, timezone);
 };
 
 const toNumberOrNull = (value) => (
@@ -81,7 +113,8 @@ const getDailyReport = async (req, res, next) => {
         const result = await withTransaction(
             async (client) => {
                 const timezone = await getUserTimezone(client, req.user.id);
-                const period = getDailyPeriod(timezone);
+                const selectedDate = getSelectedDate(req, timezone);
+                const period = getDailyPeriod(timezone, selectedDate);
 
                 const queryResult = await client.query(
                     `WITH period_readings AS (
@@ -139,8 +172,13 @@ const getDailyReport = async (req, res, next) => {
     }
 };
 
-const getMonthReport = async (client, timezone, previousMonth) => {
-    const period = getReportPeriod(timezone, previousMonth);
+const getMonthReport = async (
+    client,
+    timezone,
+    previousMonth,
+    selectedDate = null
+) => {
+    const period = getReportPeriod(timezone, previousMonth, selectedDate);
     const queryResult = await client.query(
         `WITH period_readings AS (
                         SELECT reading_date, time_slot, glucose_value
@@ -218,7 +256,15 @@ const sendMonthReport = async (req, res, next, previousMonth) => {
         const result = await withTransaction(
             async (client) => {
                 const timezone = await getUserTimezone(client, req.user.id);
-                return getMonthReport(client, timezone, previousMonth);
+                const selectedDate = previousMonth
+                    ? null
+                    : getSelectedDate(req, timezone);
+                return getMonthReport(
+                    client,
+                    timezone,
+                    previousMonth,
+                    selectedDate
+                );
             },
             req.user.id
         );

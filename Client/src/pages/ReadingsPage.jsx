@@ -39,13 +39,15 @@ function todayForTimezone(timezone) {
 function validateForm(form, timezone) {
   const errors = {};
   const value = Number(form.glucose_value);
-  if (form.glucose_value === "" || !Number.isInteger(value) || value < 40 || value > 600) {
-    errors.glucose_value = "Enter an integer between 40 and 600.";
+  if (form.glucose_value === "") {
+    errors.glucose_value = "Please enter a glucose value.";
+  } else if (!Number.isInteger(value) || value < 40 || value > 600) {
+    errors.glucose_value = "Value must be a whole number between 40 and 600 mg/dL.";
   }
   if (!form.reading_date) {
     errors.reading_date = "Choose a reading date.";
   } else if (form.reading_date > todayForTimezone(timezone)) {
-    errors.reading_date = "Future reading dates are not allowed.";
+    errors.reading_date = "Date cannot be in the future.";
   }
   if (!slotLabels[form.time_slot]) errors.time_slot = "Choose a valid time slot.";
   return errors;

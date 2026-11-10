@@ -22,7 +22,8 @@ managed through Supabase.
   after dinner.
 - Duplicate date/time-slot prevention.
 - Timezone-aware future-date validation.
-- Daily, current-month, and previous-month reports.
+- Selected-date daily reports, month-to-date reports, and previous-month
+  reports.
 - Interactive inline SVG glucose trend charts.
 - Responsive premium UI for desktop, tablet, and mobile.
 - Loading, empty, validation, error, and toast feedback states.
@@ -58,7 +59,7 @@ Sweety/
 │   ├── certs/
 │   ├── .env.example
 │   └── package.json
-├── Docs/PROJECT_CONTEXT.md # Phase-by-phase project record
+├── docs/PROJECT_CONTEXT.md # Phase-by-phase project record
 ├── .env.example            # Root environment reference
 └── README.md
 ```
@@ -262,7 +263,9 @@ npm run preview
 - `PUT /api/readings/:id`
 - `DELETE /api/readings/:id`
 - `GET /api/reports/daily`
+- `GET /api/reports/daily?date=YYYY-MM-DD`
 - `GET /api/reports/monthly`
+- `GET /api/reports/monthly?date=YYYY-MM-DD`
 - `GET /api/reports/previous-month`
 - `GET /api/health`
 
@@ -271,6 +274,12 @@ Protected endpoints require:
 ```text
 Authorization: Bearer <jwt>
 ```
+
+The optional `date` query parameter is validated as `YYYY-MM-DD` in the
+authenticated user's timezone. It selects the daily report date and changes
+the monthly report to month-to-date through that date. Without it, reports use
+the current date in the user's saved timezone. The previous-month endpoint
+always covers the complete previous calendar month.
 
 ## Testing and verification commands
 
@@ -307,12 +316,13 @@ Run the backend from `Server`, then verify:
 - Protected-route redirect.
 - Reading create, edit, duplicate conflict, and delete confirmation.
 - Daily, monthly, and previous-month reports.
+- Selected-date daily and month-to-date report ranges.
 - Empty states and network-error states.
 - Responsive layouts at desktop, tablet, and mobile widths.
 
 Phase 13 also verified 54 targeted backend, security, database, and RLS checks,
 including two-user cross-access denial and direct database-level isolation.
-The detailed record is in `Docs/PROJECT_CONTEXT.md`.
+The detailed record is in `docs/PROJECT_CONTEXT.md`.
 
 ## Evaluation demo flow
 
@@ -340,8 +350,8 @@ the recording.
 - The backend is started from `Server` and the frontend from `Client`.
 - Reading dates are calendar dates interpreted using each user's saved IANA
   timezone.
-- Reports intentionally expose only the current day, current month, and
-  previous month because those are the report periods supported by the API.
+- Reports use the selected date for daily results and month-to-date results,
+  while the previous-month report covers the complete previous calendar month.
 - The demo seed is for evaluation/development data and must not be used as a
   production data migration.
 - Sweety provides tracking tools and is not medical advice.
@@ -353,7 +363,7 @@ the recording.
   accessibility tests.
 - Add refresh-token rotation and stronger production session management.
 - Add password reset, email verification, and account settings.
-- Add configurable historical report periods when the backend supports them.
+- Add configurable historical report periods beyond the selected date.
 - Add exportable PDF/CSV reports and clinician-sharing controls.
 - Add monitoring, structured production logging, and CI/CD checks.
 - Add native-device testing and broader visual regression coverage.

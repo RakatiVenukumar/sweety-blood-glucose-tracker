@@ -913,8 +913,6 @@ endpoints and response fields:
 ### Known limitations
 
 - Physical-device testing is not available in this environment.
-- Reports expose only the current daily report, current calendar month, and
-  previous calendar month because those are the only supported backend periods.
 - Chart rendering uses inline SVG rather than a chart dependency to keep the
   frontend lightweight and consistent with the existing dashboard chart.
 
@@ -1089,3 +1087,20 @@ Prepared the repository for external evaluation:
   the README documents the existing Supabase schema and RLS prerequisites
   without inventing an unverified migration.
 - The user will record and attach the requested 2–3 minute application demo.
+
+## Assessment alignment update
+
+- Added optional `date=YYYY-MM-DD` support to daily reports.
+- Added selected-date month-to-date behavior to the monthly report endpoint.
+- Kept previous-month reports as complete previous-calendar-month reports.
+- Added a selected-date control to the reports page.
+- Report averages now display one decimal place in the reports UI.
+- Updated reading validation copy for required, range, future-date, and
+  duplicate-slot cases to match the assessment wording more closely.
+
+### Verification
+
+- Selected-date daily and monthly API checks passed against the seeded account.
+- Future selected report dates were rejected.
+- Frontend production build, backend syntax checks, and `git diff --check`
+  passed after the alignment changes.

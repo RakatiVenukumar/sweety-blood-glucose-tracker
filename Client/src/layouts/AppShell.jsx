@@ -61,7 +61,8 @@ function AppShell() {
             <span className="demo-pill"><span className="status-dot" /> Demo mode</span>
             <div className="account-menu">
               <span className="account-name">{user?.name || "Preview mode"}</span>
-              <button className="avatar-button" aria-label="Sign out" onClick={signOut}>{initials}</button>
+              <button className="logout-button" type="button" onClick={signOut}>Log out</button>
+              <span className="avatar-button" aria-hidden="true">{initials}</span>
             </div>
           </div>
         </header>

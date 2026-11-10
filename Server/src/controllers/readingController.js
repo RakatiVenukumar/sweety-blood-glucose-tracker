@@ -46,6 +46,11 @@ const validateReadingFields = (fields, timezone) => {
     validateGlucoseValue(fields.glucose_value);
 };
 
+const getTimeSlotLabel = (timeSlot) => timeSlot
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 const createReading = async (req, res, next) => {
     try {
         const fields = validateReadingBody(req.body);
@@ -86,7 +91,9 @@ const createReading = async (req, res, next) => {
         if (error.code === "23505") {
             return next(
                 new AppError(
-                    "A reading already exists for this date and time slot",
+                    `You already have an ${getTimeSlotLabel(
+                        req.body.time_slot
+                    )} reading for this date.`,
                     409
                 )
             );
@@ -206,7 +213,9 @@ const updateReading = async (req, res, next) => {
         if (error.code === "23505") {
             return next(
                 new AppError(
-                    "A reading already exists for this date and time slot",
+                    `You already have an ${getTimeSlotLabel(
+                        req.body.time_slot
+                    )} reading for this date.`,
                     409
                 )
             );
