@@ -38,6 +38,36 @@ managed through Supabase.
 - **Security:** Helmet, CORS allowlist, request-size limits, PostgreSQL RLS
 - **Charts:** Lightweight inline SVG; no chart dependency is required
 
+## Screenshots
+
+### Login
+
+![Sweety login screen](docs/screenshots/01-login.png)
+
+### Dashboard overview
+
+![Sweety dashboard overview](docs/screenshots/02-dashboard-top.png)
+
+### Dashboard details
+
+![Sweety dashboard details](docs/screenshots/03-dashboard-details.png)
+
+### Reading history
+
+![Reading history](docs/screenshots/04-readings-history.png)
+
+### Add a glucose reading
+
+![Add reading form](docs/screenshots/05-add-reading.png)
+
+### Reports overview
+
+![Reports overview](docs/screenshots/06-reports-overview.png)
+
+### Report details and empty states
+
+![Report details](docs/screenshots/07-reports-details.png)
+
 ## Requirements
 
 - Node.js 20+ recommended
@@ -59,7 +89,9 @@ Sweety/
 │   ├── certs/
 │   ├── .env.example
 │   └── package.json
-├── docs/PROJECT_CONTEXT.md # Phase-by-phase project record
+├── docs/
+│   ├── screenshots/        # Application screenshots
+│   └── PROJECT_CONTEXT.md  # Phase-by-phase project record
 ├── .env.example            # Root environment reference
 └── README.md
 ```
