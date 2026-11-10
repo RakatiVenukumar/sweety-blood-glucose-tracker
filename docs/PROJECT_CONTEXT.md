@@ -917,3 +917,72 @@ endpoints and response fields:
   previous calendar month because those are the only supported backend periods.
 - Chart rendering uses inline SVG rather than a chart dependency to keep the
   frontend lightweight and consistent with the existing dashboard chart.
+
+## Phase 13 – Complete Testing, Security Audit, and Two-User RLS Isolation
+
+### Verification scope
+
+Phase 13 performed verification only. No product features, backend APIs,
+database schema, RLS policies, authentication architecture, or frontend
+designs were changed.
+
+### Backend and security results
+
+- Dedicated two-user API and database run: **44/44 checks passed**.
+- Middleware and JWT regression run: **10/10 checks passed**.
+- Security review: **no concrete vulnerabilities identified**.
+- Registration and login checks passed for valid users, duplicate email,
+  invalid email, weak password, wrong password, and response safety.
+- Protected routes rejected missing, invalid, wrong-scheme, and malformed
+  bearer authentication with HTTP 401.
+- Reading validation passed for invalid UUIDs, impossible dates, decimal
+  glucose values, duplicate slots, and malformed JSON.
+- Helmet headers, allowed/disallowed CORS behavior, and the 10 KB JSON body
+  limit were verified.
+- Unknown routes returned HTTP 404 without exposing sensitive data.
+
+### Two-user RLS isolation results
+
+| Test | User A | User B |
+|---|---|---|
+| Read own records | Passed | Passed |
+| Read other user's records | Denied with 404 | Denied with 404 |
+| Update own records | Passed | Passed |
+| Update other user's records | Denied with 404 | Denied with 404 |
+| Delete own records | Passed during cleanup verification | Passed during cleanup verification |
+| Delete other user's records | Denied with 404 | Denied with 404 |
+| Own reports contain only own data | Passed | Passed |
+
+Database-level checks also passed:
+
+- `sweety_app` is neither superuser nor `BYPASSRLS`.
+- RLS is enabled on `public.users` and `public.glucose_readings`.
+- The active glucose-reading policy uses `app.current_user_id`.
+- Separate transaction-local contexts exposed exactly two rows to each
+  dedicated test user and did not cross-leak records.
+- Test-created readings were deleted through the authenticated API after
+  verification. Dedicated test users were retained because no safe user-delete
+  endpoint exists.
+
+### Frontend and regression results
+
+- Existing frontend production build passed.
+- Unauthenticated navigation to `/reports` redirected to `/login`.
+- Authenticated report rendering had already passed for empty and populated
+  daily, monthly, and previous-month data.
+- Existing dashboard and reading-management browser flows remained intact
+  during the Phase 13 API verification.
+- Responsive checks previously passed at 1440px, 1024px, 768px, 390px, and
+  320px with no horizontal overflow.
+
+### Test status and limitations
+
+- **Passed:** 54 targeted backend/security/database checks, plus frontend
+  build and protected-route verification.
+- **Failed:** None.
+- **Not performed:** A production-mode forced HTTP 500 response was not
+  induced because the application has no safe test-only failure endpoint.
+- **Not performed:** Physical-device and browser matrix testing beyond the
+  available automated browser viewports.
+- No dependencies were added and no files were changed to fix bugs because
+  the verification runs found no genuine defects.
