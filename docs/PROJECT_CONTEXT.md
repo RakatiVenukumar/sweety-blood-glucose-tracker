@@ -6,7 +6,7 @@ Sweety is a blood glucose tracking application for diabetes patients.
 
 Users can record up to four glucose readings per day and view daily and monthly reports.
 
-The application will provide secure authentication, personal glucose reading management, data validation, and reporting.
+The application aims to provide secure authentication, personal glucose reading management, data validation, reporting, and a responsive user experience.
 
 ## 2. Technology Stack
 
@@ -28,7 +28,7 @@ The application will provide secure authentication, personal glucose reading man
 
 - Build incrementally, following the agreed project roadmap.
 - Do not rewrite existing working functionality unnecessarily.
-- Follow the existing project architecture.
+- Follow the established project architecture.
 - Validate all backend inputs.
 - Never expose secrets, credentials, database passwords, or private keys.
 - Test every completed feature.
@@ -37,6 +37,7 @@ The application will provide secure authentication, personal glucose reading man
 - Update this PROJECT_CONTEXT.md at the end of every completed phase, after resolving issues and before committing and pushing.
 - Make regular Git commits with meaningful messages.
 - Preserve existing architectural decisions unless a change is necessary and discussed.
+- Do not introduce unnecessary complexity or dependencies.
 
 ## 5. Assignment Requirements
 
@@ -70,82 +71,154 @@ Status: Completed
 - Created GitHub repository.
 - Initialized Git and configured remote.
 - Created `.gitignore`.
+- Created Supabase project.
+- Obtained database connection information and API credentials.
 - Created initial PROJECT_CONTEXT.md.
-- Created Supabase project and obtained the required connection information.
 
 ### Phase 2: Database Architecture
-Status: Completed – Initial schema and security configuration
+Status: Completed – Initial database configuration and hardening
 
-**Tables created:**
+#### 2.1 Database design
+
+Created two PostgreSQL tables:
 
 1. `public.users`
 2. `public.glucose_readings`
 
-**Users table:**
-- `id`: UUID primary key.
+#### 2.2 Users table
+
+Columns:
+- `id`: UUID primary key with automatic generation.
 - `name`: VARCHAR(100), NOT NULL.
 - `email`: VARCHAR(255), NOT NULL.
 - `password_hash`: TEXT, NOT NULL.
-- `created_at`: TIMESTAMPTZ.
-- `updated_at`: TIMESTAMPTZ.
-- Non-empty checks for name, email, and password hash.
-- Case-insensitive email uniqueness index.
+- `timezone`: VARCHAR(64), NOT NULL, default `Asia/Kolkata`.
+- `created_at`: TIMESTAMPTZ, default NOW().
+- `updated_at`: TIMESTAMPTZ, default NOW().
 
-**Glucose readings table:**
-- `id`: UUID primary key.
-- `user_id`: UUID foreign key referencing `users.id`.
-- `reading_date`: DATE.
-- `time_slot`: VARCHAR(30).
-- `glucose_value`: INTEGER.
-- `created_at`: TIMESTAMPTZ.
-- `updated_at`: TIMESTAMPTZ.
+Constraints:
+- Name cannot be empty.
+- Email cannot be empty.
+- Password hash cannot be empty.
+- Email uniqueness is enforced case-insensitively.
 
-**Database constraints:**
+#### 2.3 Glucose readings table
+
+Columns:
+- `id`: UUID primary key with automatic generation.
+- `user_id`: UUID foreign key.
+- `reading_date`: DATE, NOT NULL.
+- `time_slot`: VARCHAR(30), NOT NULL.
+- `glucose_value`: INTEGER, NOT NULL.
+- `created_at`: TIMESTAMPTZ, default NOW().
+- `updated_at`: TIMESTAMPTZ, default NOW().
+
+Constraints:
 - Glucose values must be between 40 and 600.
-- Only four permitted time slots.
-- Unique combination of user, reading date, and time slot.
-- Foreign key with `ON DELETE CASCADE`.
-- Maximum of four readings per user per day is enforced by the four allowed slots and unique constraint.
-- Future reading dates will be validated by the backend.
+- Only four predefined time slots are permitted:
+  - `morning`
+  - `after_breakfast`
+  - `after_lunch`
+  - `after_dinner`
+- Unique combination of user ID, reading date, and time slot.
+- Foreign key references `users.id`.
+- `ON DELETE CASCADE` is configured.
+- Maximum of four readings per user per day is enforced by the allowed slots and unique constraint.
+- Future dates will be rejected through backend validation.
 
-**Relationships:**
+#### 2.4 Relationships
+
 - One user can have multiple glucose readings.
-- Every glucose reading belongs to one user.
+- Each glucose reading belongs to one user.
+- Verified the foreign key and cascading deletion configuration.
 
-**Indexes:**
+#### 2.5 Data integrity and indexing
+
 - Primary key indexes on both tables.
 - Unique index on `(user_id, reading_date, time_slot)`.
-- Case-insensitive unique index on user email.
-- Redundant case-sensitive email uniqueness constraint targeted for removal.
+- Case-insensitive unique email index using `LOWER(email)`.
+- Removed the redundant case-sensitive email uniqueness constraint.
+- Database constraints enforce valid glucose values and time slots.
 
-**Security configuration:**
-- Custom JWT authentication will be handled by Express.
-- Supabase Auth is not being used.
-- A restricted PostgreSQL role named `sweety_app` exists.
-- Verified role flags:
+#### 2.6 Automatic timestamps
+
+Created a reusable PostgreSQL function:
+
+`public.set_updated_at()`
+
+Created triggers:
+- `trigger_users_updated_at`
+- `trigger_glucose_readings_updated_at`
+
+Both tables automatically update `updated_at` whenever an existing record is modified.
+
+#### 2.7 Date and timezone strategy
+
+- Reading dates use PostgreSQL `DATE`.
+- Creation and modification timestamps use `TIMESTAMPTZ`.
+- Added a `timezone` column to the users table.
+- Default timezone: `Asia/Kolkata`.
+- Backend will validate IANA timezone names.
+- Report date boundaries will be calculated using each user's timezone.
+
+#### 2.8 Database security and RLS
+
+- Custom Express JWT authentication will be used instead of Supabase Auth.
+- Identified the restricted PostgreSQL role `sweety_app`.
+- Verified its security flags:
   - Superuser: false.
-  - Create role: false.
-  - Create database: false.
-  - Login: true.
+  - Create roles: false.
+  - Create databases: false.
+  - Login enabled: true.
   - Bypass RLS: false.
-- Granted SELECT, INSERT, UPDATE, and DELETE permissions to `sweety_app` on both tables.
-- Enabled Row Level Security (RLS) on both tables.
-- Created a backend-management policy for the users table.
-- Created a user-specific policy for glucose readings using `app.current_user_id`.
+- Granted SELECT, INSERT, UPDATE, DELETE permissions to `sweety_app` on both tables.
+- Enabled RLS on both tables.
+- Created the `users` table backend-management policy.
+- Created the `glucose_readings` user-specific policy using `app.current_user_id`.
 - Removed direct table permissions from `anon`, `authenticated`, and `PUBLIC`.
-- Verified that `sweety_app` retains the required table permissions.
+- Verified the expected RLS policies and backend permissions.
 
-**Important implementation detail:**
+**Required backend implementation:**
 
-The Express backend must:
-1. Verify the user's JWT.
+1. Verify the JWT.
 2. Obtain the authenticated user ID from the verified token.
 3. Start a database transaction.
 4. Set `app.current_user_id` within that transaction.
-5. Execute user-scoped database queries within the same transaction.
+5. Execute user-scoped queries within the same transaction.
 6. Commit or roll back the transaction appropriately.
 
-RLS must be tested through the actual backend connection before considering user isolation fully verified.
+#### 2.9 Backup and recovery
+
+- Reviewed Supabase Free plan backup limitations.
+- Established a manual database backup strategy.
+- Database schema changes will be maintained through SQL scripts/migrations and Git.
+- A complete backup and restore test remains pending before production deployment.
+
+#### 2.10 Database verification
+
+Completed initial database audits covering:
+- Table columns and data types.
+- Nullability and default values.
+- Database constraints and indexes.
+- Timestamp triggers.
+- User timezone column.
+- RLS configuration.
+- Backend database permissions.
+- Application database role security flags.
+
+No actual sample users or glucose readings have been inserted yet.
+
+### Phase 2 Overall Status
+
+**Completed:** Initial database schema, relationships, constraints, indexes, timestamp triggers, timezone support, RLS configuration, permissions review, and backup strategy.
+
+**Not yet tested through the actual backend:**
+- Restricted database role login and connectivity.
+- Real database CRUD operations.
+- Transaction-scoped RLS behavior.
+- Cross-user data isolation.
+- Registration and login database operations.
+- Automatic timestamp behavior with actual updates.
 
 ## 7. Development Decisions
 
@@ -156,38 +229,71 @@ RLS must be tested through the actual backend connection before considering user
 5. Store glucose readings in a separate table linked to users.
 6. Allow only four predefined daily reading slots.
 7. Enforce one reading per user per date per time slot.
-8. Generate reports dynamically from glucose readings rather than storing separate report records.
+8. Generate reports dynamically rather than storing separate report records.
 9. Use database constraints for data integrity and backend validation for application-specific rules.
 10. Use RLS to restrict glucose reading access to the authenticated application user.
 11. Use the restricted `sweety_app` database role for application access.
-12. Keep the frontend separate from the backend.
+12. Use transaction-scoped database user context for RLS.
+13. Use automatic database triggers for `updated_at`.
+14. Store each user's preferred IANA timezone.
+15. Keep the frontend separate from the backend.
+16. Avoid unnecessary indexes and redundant database constraints.
 
 ## 8. Known Issues and Pending Verification
 
-- Confirm/configure the `sweety_app` login password and verify its database connection.
-- Verify that the backend uses the restricted database role rather than the database owner.
-- Implement transaction-scoped `app.current_user_id` handling in Express.
-- Test RLS through the actual backend connection.
+- Verify/configure the `sweety_app` database password and actual login connection.
+- Confirm the role has no unexpected privileged memberships.
+- Configure Express to use the restricted database role.
+- Implement transaction-scoped `app.current_user_id` handling.
+- Test RLS using actual backend requests.
 - Test cross-user data isolation.
-- Implement automatic `updated_at` timestamp updates.
-- Test database CRUD operations.
-- Test duplicate readings, invalid glucose values, invalid time slots, and future dates.
-- Verify all database permissions and policies after backend integration.
+- Verify automatic `updated_at` triggers through actual updates.
+- Test all database CRUD operations.
+- Test duplicate readings and invalid glucose values.
+- Test invalid time slots and future dates.
+- Test timezone handling and report date boundaries.
+- Perform a manual database backup and restore test before production deployment.
 
-No actual sample users or glucose readings have been inserted yet. Test data will be introduced through the seed script after backend implementation.
+## Phase 3 – Backend Foundation
 
-## 9. Next Development Phase
+**Status: Completed**
 
-### Phase 3: Backend Foundation
+### Technology and dependencies
+- Node.js and Express 5
+- PostgreSQL using the `pg` package
+- Supabase Transaction Pooler
+- dotenv, CORS, Helmet and Nodemon
 
-Planned work:
-- Initialize the Node.js backend.
-- Configure Express.
-- Set up environment variables.
-- Configure PostgreSQL connectivity.
-- Connect using the restricted database role.
-- Establish reusable database transaction handling.
-- Configure middleware and centralized error handling.
-- Verify the backend-to-database connection.
+### Database connectivity
+- Connected Express to Supabase PostgreSQL.
+- Configured the restricted `sweety_app` database role.
+- Configured SSL certificate verification.
+- Created a reusable PostgreSQL connection pool.
+- Implemented transaction management using `withTransaction()`.
+- Implemented transaction-local user context for RLS.
 
-Continue following the agreed 17-phase development roadmap without changing its build order.
+### Backend architecture
+- Created the `src/` folder structure.
+- Separated configuration, controllers, middleware, routes, services and utilities.
+- Implemented custom application errors.
+- Implemented asynchronous error handling.
+- Implemented centralized 404 and error-handling middleware.
+- Configured JSON parsing, CORS and Helmet.
+- Created the `/api/health` endpoint.
+
+### Verification
+- PostgreSQL connection tested successfully.
+- Database transaction tested successfully.
+- Application role verified as `sweety_app`.
+- RLS transaction context tested successfully.
+- Health-check endpoint tested successfully.
+- Nonexistent route correctly returned HTTP 404.
+
+### Important configuration
+- Database credentials remain in `server/.env`.
+- `.env.example` contains placeholders only.
+- Supabase root certificate is stored in `server/certs/`.
+- Temporary database testing endpoints were removed after verification.
+
+### Pending phases
+Authentication, reading APIs, validation, reports, frontend integration and deployment remain future phases.
