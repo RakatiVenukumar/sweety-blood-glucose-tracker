@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const links = [
   { to: "/dashboard", label: "Overview", icon: "◌" },
@@ -7,6 +8,11 @@ const links = [
 ];
 
 function AppShell() {
+  const { user, signOut } = useAuth();
+  const initials = user?.name
+    ? user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
+    : "SK";
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -51,7 +57,10 @@ function AppShell() {
           <div className="breadcrumb"><span>Workspace</span><b>/</b><strong>Preview</strong></div>
           <div className="topbar-actions">
             <span className="demo-pill"><span className="status-dot" /> Demo mode</span>
-            <button className="avatar-button" aria-label="Profile preview">SK</button>
+            <div className="account-menu">
+              <span className="account-name">{user?.name || "Preview mode"}</span>
+              <button className="avatar-button" aria-label="Sign out" onClick={signOut}>{initials}</button>
+            </div>
           </div>
         </header>
         <Outlet />

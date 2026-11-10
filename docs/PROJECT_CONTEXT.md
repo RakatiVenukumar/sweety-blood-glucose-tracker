@@ -648,3 +648,272 @@ Created:
 - Demo chart and insight values are illustrative only.
 - Full browser matrix testing across physical devices is not available in this
   environment.
+
+## Phase 9 – Premium Authentication UI and Backend Integration
+
+### Implementation
+
+Added complete frontend authentication experiences without changing the
+backend or database architecture:
+
+- Created premium Login and Registration pages.
+- Added accessible form fields, validation, inline field errors, backend error
+  messages, loading states, password visibility toggles, and mobile layouts.
+- Registration sends `name`, normalized `email`, and `password` to
+  `POST /api/auth/register`.
+- Login sends normalized `email` and `password` to `POST /api/auth/login`.
+- Successful responses store only the returned JWT and safe user object; user
+  passwords are never persisted.
+- Added a small auth context for session state, sign-in, and sign-out.
+- Added `ProtectedRoute` and `PublicOnlyRoute`.
+- Protected `/dashboard`, `/readings`, and `/reports` while keeping the Phase 8
+  visual preview public.
+- Preserved the originally requested protected route through login redirect
+  state.
+- Added authenticated-shell sign-out behavior.
+- Central API client now attaches tokens from either local or session storage,
+  handles network failures, and clears stored auth state after HTTP 401.
+
+### Persistence strategy
+
+- “Keep me signed in” stores the auth session in `localStorage`.
+- If unchecked, the session uses `sessionStorage`.
+- Only the token and safe backend user response are stored.
+- No refresh-token functionality was introduced because the backend does not
+  provide it.
+
+### Files created
+
+- `client/src/context/AuthContext.jsx`
+- `client/src/components/ProtectedRoute.jsx`
+- `client/src/components/PublicOnlyRoute.jsx`
+- `client/src/components/AuthBrandPanel.jsx`
+- `client/src/components/PasswordField.jsx`
+- `client/src/pages/LoginPage.jsx`
+- `client/src/pages/RegisterPage.jsx`
+
+### Files modified
+
+- `client/src/App.jsx`
+- `client/src/services/apiClient.js`
+- `client/src/layouts/AppShell.jsx`
+- `client/src/styles/global.css`
+
+### Testing and verification
+
+- `npm run build` passed after the Phase 9 implementation.
+- Browser login page smoke test passed.
+- Browser registration validation passed for required fields and password
+  confirmation.
+- Password show/hide behavior passed.
+- Real registration against the existing backend passed and redirected to the
+  protected dashboard placeholder.
+- Real login against the existing backend passed and restored the session.
+- Invalid credentials displayed the backend’s generic `Invalid email or
+  password` message.
+- Sign-out cleared stored auth state.
+- Unauthenticated access to `/dashboard` redirected to `/login`.
+- Authenticated access to the placeholder route succeeded.
+- Login and registration navigation passed.
+- Mobile viewport testing at 390px showed no horizontal overflow.
+- Backend remained unchanged.
+
+### Known limitations
+
+- The browser test created one dedicated Phase 9 test account; no production
+  data or readings were modified.
+- A browser network panel may show the expected HTTP 401 entry when invalid
+  credentials are intentionally tested; the application displays the safe
+  backend message and does not log secrets.
+- Full physical-device testing is not available in this environment.
+- Dashboard, readings, and reports functionality remain deferred to later
+  phases.
+
+## Phase 10 – Premium Health-Tech Dashboard
+
+### Implementation
+
+Added the first real authenticated dashboard experience without changing the
+backend or database architecture:
+
+- Added `DashboardPage` with personalized greeting, current date, add-reading
+  action, daily metrics, monthly overview, recent readings, and time-slot
+  distribution.
+- Connected the dashboard to the existing daily report, monthly report, and
+  readings APIs through the centralized authenticated API client.
+- Added loading skeletons, API error handling, empty states, and null-safe
+  metric rendering so missing data is not displayed as misleading zeroes.
+- Added `MetricCard` and `DashboardChart` reusable components.
+- Added an inline SVG glucose trend visualization with responsive sizing,
+  hover point emphasis, and browser-native data tooltips.
+- Used actual readings where available and monthly report summaries as a
+  fallback; the dashboard does not fabricate health data.
+- Preserved protected routing and the existing authenticated application shell.
+
+### Files created
+
+- `Client/src/components/DashboardChart.jsx`
+- `Client/src/components/MetricCard.jsx`
+- `Client/src/pages/DashboardPage.jsx`
+
+### Files modified
+
+- `Client/src/App.jsx`
+- `Client/src/layouts/AppShell.jsx`
+- `Client/src/styles/global.css`
+
+### Testing and verification
+
+- `npm run build` passed from `Client` after the Phase 10 implementation.
+- Authenticated browser smoke test passed at `/dashboard`.
+- Daily, monthly, and readings API requests completed successfully in the
+  browser for the dedicated test account.
+- Dashboard rendered all four metric cards and four content panels.
+- Empty-state behavior passed for an account with no readings.
+- No unexpected browser console errors were observed during the dashboard test.
+- Responsive viewport checks passed at 1440px, 1024px, 768px, 390px, and
+  320px with no horizontal overflow.
+- Dashboard navigation, add-reading links, report links, and sign-out controls
+  were present and routed through the existing application shell.
+- This environment had no populated readings for the test account, so
+  populated chart points, chart hover tooltips, and populated reading rows were
+  not browser-verified in this phase.
+
+### Known limitations
+
+- Physical-device testing is not available in this environment.
+- A populated-data browser test remains useful for validating chart points and
+  reading-row presentation once test data is intentionally available.
+- Reading entry, reading management, and reports UI remain future phases.
+
+## Phase 11 – Premium Glucose Reading Management UI
+
+### Implementation
+
+Added the complete authenticated reading-management experience without changing
+backend APIs, database schema, RLS policies, or authentication behavior:
+
+- Replaced the protected readings placeholder with `ReadingsPage`.
+- Added a premium reading summary with displayed count, latest value/date, and
+  cadence state based only on actual API data.
+- Added create and edit forms using the existing `POST /api/readings` and
+  `PUT /api/readings/:id` contracts.
+- Added exact backend-compatible validation for integer glucose values from
+  40–600, `YYYY-MM-DD` dates, timezone-aware future-date prevention, and the
+  four supported time slots.
+- Added loading, empty, success, network, validation, and backend error states,
+  including graceful duplicate-conflict messages.
+- Added responsive reading history with newest-first/oldest-first sorting,
+  date filtering, clear-filter behavior, human-readable slot labels, and
+  mobile reading cards.
+- Added accessible edit actions and an alert-dialog confirmation flow for
+  `DELETE /api/readings/:id`.
+- Added a readings-changed event so dashboard data refreshes after create,
+  update, or delete without a full-page reload.
+- Added lightweight modal entrance, hover, skeleton, and reduced-motion styles
+  consistent with the existing Sweety visual system.
+
+### Files created
+
+- `Client/src/pages/ReadingsPage.jsx`
+
+### Files modified
+
+- `Client/src/App.jsx`
+- `Client/src/pages/DashboardPage.jsx`
+- `Client/src/styles/global.css`
+- `docs/PROJECT_CONTEXT.md`
+
+### Testing and verification
+
+- `npm run build` passed from `Client` after the Phase 11 implementation.
+- `git diff --check` passed.
+- Authenticated browser reading-history load passed against the real backend.
+- Valid create flow passed with a real reading and success feedback.
+- Valid edit flow passed and the updated glucose value appeared immediately.
+- Delete confirmation appeared as an accessible alert dialog.
+- Canceling deletion preserved the reading.
+- Confirmed deletion removed the reading and displayed success feedback.
+- Empty-history state passed after cleanup.
+- Responsive viewport checks passed at 1440px, 1024px, 768px, 390px, and
+  320px with no horizontal overflow.
+- Network failure state was verified when the backend was unavailable, then the
+  flow was rerun successfully after starting the backend from `Server`.
+- No unexpected browser console errors were observed during the successful
+  authenticated CRUD flow.
+- No backend files, APIs, schema, RLS policies, or dependencies were changed.
+
+### Known limitations
+
+- Physical-device testing is not available in this environment.
+- Date filtering is applied to the authenticated result set in the client
+  because the existing GET readings endpoint does not accept filter
+  parameters; no unsupported query parameters are sent.
+- A dedicated duplicate-conflict browser case and populated multi-reading
+  sorting case remain optional follow-up checks; backend conflict messages are
+  surfaced directly by the form.
+
+## Phase 12 – Premium Reports and Analytics UI
+
+### Implementation
+
+Added the authenticated Reports experience using only the existing report
+endpoints and response fields:
+
+- Replaced the protected reports placeholder with `ReportsPage`.
+- Integrated daily, current-month, and previous-month report requests through
+  the centralized authenticated API client.
+- Added period-aware overview metrics for total readings, average, minimum, and
+  maximum glucose with null-safe rendering and consistent mg/dL units.
+- Added a reusable inline SVG `ReportTrendChart` for monthly and previous-month
+  daily average trends with interactive SVG title tooltips.
+- Added monthly daily summaries, actual time-slot distribution counts, and a
+  distinct current-day report section.
+- Added a previous-month section using backend-provided aggregate values rather
+  than recalculating from daily averages.
+- Added loading skeletons, network/server error handling, empty chart states,
+  empty daily states, and zero-count slot displays.
+- Preserved timezone-aware period labels returned by the backend and did not
+  add arbitrary date-range controls or unsupported API parameters.
+- Added responsive report layouts, lightweight chart transitions, hover depth,
+  and reduced-motion behavior using the existing design tokens.
+
+### Files created
+
+- `Client/src/components/ReportTrendChart.jsx`
+- `Client/src/pages/ReportsPage.jsx`
+
+### Files modified
+
+- `Client/src/App.jsx`
+- `Client/src/styles/global.css`
+- `docs/PROJECT_CONTEXT.md`
+
+### Testing and verification
+
+- `npm run build` passed from `Client` after the Phase 12 implementation.
+- `git diff --check` passed.
+- Authenticated browser loading passed for daily, monthly, and previous-month
+  report APIs.
+- Empty current-day, current-month, and previous-month report states passed.
+- Populated browser verification passed with real readings:
+  monthly totals, averages, minimums, maximums, daily summaries, and slot
+  counts matched the backend responses.
+- Monthly and previous-month SVG charts rendered actual data points and browser
+  tooltip titles.
+- Reporting periods displayed correctly for November 2026 and October 2026.
+- Responsive viewport checks passed at 1440px, 1024px, 768px, 390px, and
+  320px with no horizontal overflow.
+- No unexpected browser console errors were observed during successful report
+  rendering.
+- Temporary browser test readings were deleted after verification.
+- No backend files, APIs, database schema, RLS policies, or dependencies were
+  changed.
+
+### Known limitations
+
+- Physical-device testing is not available in this environment.
+- Reports expose only the current daily report, current calendar month, and
+  previous calendar month because those are the only supported backend periods.
+- Chart rendering uses inline SVG rather than a chart dependency to keep the
+  frontend lightweight and consistent with the existing dashboard chart.
