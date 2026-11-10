@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -9,6 +9,8 @@ const links = [
 
 function AppShell() {
   const { user, signOut } = useAuth();
+  const location = useLocation();
+  const currentLabel = links.find((link) => link.to === location.pathname)?.label || "Preview";
   const initials = user?.name
     ? user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
     : "SK";
@@ -54,7 +56,7 @@ function AppShell() {
 
       <main className="main-canvas">
         <header className="topbar">
-          <div className="breadcrumb"><span>Workspace</span><b>/</b><strong>Preview</strong></div>
+          <div className="breadcrumb" aria-label="Breadcrumb"><span>Workspace</span><b>/</b><strong>{currentLabel}</strong></div>
           <div className="topbar-actions">
             <span className="demo-pill"><span className="status-dot" /> Demo mode</span>
             <div className="account-menu">

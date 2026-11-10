@@ -986,3 +986,106 @@ Database-level checks also passed:
   available automated browser viewports.
 - No dependencies were added and no files were changed to fix bugs because
   the verification runs found no genuine defects.
+
+## Phase 14 – UI Polish and Responsiveness
+
+### Implementation
+
+Completed a focused visual and usability refinement pass without changing
+backend contracts or product behavior:
+
+- Finalized shared typography, spacing, focus, color, and interaction tokens.
+- Added stronger keyboard focus indicators and touch-friendly button sizing.
+- Improved the authenticated shell with route-aware breadcrumb labels instead
+  of the previous static `Preview` label.
+- Added a reusable accessible toast notification system with success/error
+  tones, dismiss actions, automatic dismissal, and reduced-motion support.
+- Connected reading create and delete success feedback to the toast system
+  while preserving the existing inline context feedback.
+- Refined loading skeleton motion, card hover depth, form controls, modal
+  controls, error surfaces, and mobile toast placement.
+- Preserved intentional responsive layouts for dashboard, readings, reports,
+  authentication, charts, forms, and history rows.
+
+### Files created
+
+- `Client/src/context/ToastContext.jsx`
+
+### Files modified
+
+- `Client/src/App.jsx`
+- `Client/src/layouts/AppShell.jsx`
+- `Client/src/pages/ReadingsPage.jsx`
+- `Client/src/styles/tokens.css`
+- `Client/src/styles/global.css`
+- `Docs/PROJECT_CONTEXT.md`
+
+### Testing and verification
+
+- `npm run build` passed from `Client`.
+- `git diff --check` passed.
+- Authenticated browser shell rendered successfully with route-aware
+  `Workspace / Overview` and `Workspace / Readings` breadcrumbs.
+- Reading success and delete toasts rendered with accessible status roles and
+  dismiss buttons.
+- Temporary browser test reading was deleted after verification.
+- No unexpected browser console errors were observed.
+- Responsive viewport checks passed at 1440px, 1024px, 768px, 390px, and
+  320px with no horizontal overflow.
+- Existing backend APIs, authentication, database, RLS, and architecture were
+  not changed.
+
+### Known limitations
+
+- Physical-device testing is not available in this environment.
+- Visual review was performed through the available browser automation and
+  viewport checks; native mobile browser rendering remains unverified.
+
+## Phase 15 – Seed Data and Submission Documentation
+
+### Implementation
+
+Prepared the repository for external evaluation:
+
+- Added an idempotent `Server/scripts/seedDemo.js` utility.
+- Added `npm run seed:demo` to the backend package scripts.
+- The seed creates or updates the dedicated `demo@sweety.local` account and
+  inserts 12 sample readings across the current and previous reporting
+  periods.
+- Seeded readings use the existing database constraints and transaction-local
+  `app.current_user_id` setting.
+- Added root `.env.example` covering backend, frontend, and optional demo-seed
+  variables.
+- Added a complete root `README.md` covering installation, database setup,
+  RLS requirements, seed usage, execution, routes, testing, evaluation demo
+  flow, assumptions, security notes, and future improvements.
+
+### Files created
+
+- `.env.example`
+- `README.md`
+- `Server/scripts/seedDemo.js`
+
+### Files modified
+
+- `Server/package.json`
+- `Docs/PROJECT_CONTEXT.md`
+
+### Verification
+
+- Backend seed script syntax checked with Node.
+- `npm run seed:demo` executed successfully against the configured database;
+  the demo account was created/updated and 12 readings were verified inside
+  its transaction-local RLS context.
+- Frontend production build passed.
+- Backend syntax checks passed for the server and core controllers.
+- `git diff --check` passed.
+- The demo seed was designed to be rerunnable without duplicate readings.
+- No real secrets were added to environment examples or documentation.
+
+### Notes
+
+- The repository did not contain a versioned SQL migration/bootstrap file, so
+  the README documents the existing Supabase schema and RLS prerequisites
+  without inventing an unverified migration.
+- The user will record and attach the requested 2–3 minute application demo.

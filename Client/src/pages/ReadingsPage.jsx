@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../services/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 const slotLabels = {
   morning: "Morning",
@@ -152,6 +153,7 @@ function ReadingsSkeleton() {
 
 function ReadingsPage() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [readings, setReadings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -197,6 +199,7 @@ function ReadingsPage() {
     });
     setFormState(null);
     setNotice(message);
+    addToast(message);
     window.dispatchEvent(new Event("sweety:readings-changed"));
   }
 
@@ -206,6 +209,7 @@ function ReadingsPage() {
       await apiRequest(`/readings/${deleting.id}`, { method: "DELETE" });
       setReadings((current) => current.filter((item) => item.id !== deleting.id));
       setNotice("Reading deleted successfully.");
+      addToast("Reading deleted successfully.");
       setDeleting(null);
       window.dispatchEvent(new Event("sweety:readings-changed"));
     } catch (requestError) {
