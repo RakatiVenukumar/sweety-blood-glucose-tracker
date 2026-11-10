@@ -2,61 +2,33 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { pool } = require("../config/db");
 const AppError = require("../utils/AppError");
+const {
+    DEFAULT_TIMEZONE,
+    assertRequestBody,
+    validateName,
+    validateEmail,
+    validatePassword,
+    validateTimezone
+} = require("../utils/validators");
 
 const register = async (req, res, next) => {
     try {
+        assertRequestBody(req.body);
         const { name, email, password, timezone } = req.body;
 
-        // 1. Validate required fields
-        if (!name || !email || !password) {
+        if (name === undefined || email === undefined || password === undefined) {
             throw new AppError(
                 "Name, email and password are required",
                 400
             );
         }
 
-        // 2. Normalize and validate name and email
-        const trimmedName = name.trim();
-        const normalizedEmail = email.trim().toLowerCase();
-
-        if (trimmedName.length < 2 || trimmedName.length > 100) {
-            throw new AppError(
-                "Name must contain between 2 and 100 characters",
-                400
-            );
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (
-            normalizedEmail.length > 255 ||
-            !emailRegex.test(normalizedEmail)
-        ) {
-            throw new AppError("Please provide a valid email address", 400);
-        }
-
-        // 3. Validate password
-        if (
-            typeof password !== "string" ||
-            password.length < 8 ||
-            Buffer.byteLength(password, "utf8") > 72
-        ) {
-            throw new AppError(
-                "Password must be at least 8 characters and no more than 72 bytes",
-                400
-            );
-        }
-
-        // 4. Validate timezone
-        const userTimezone = timezone || "Asia/Kolkata";
-
-        try {
-            new Intl.DateTimeFormat("en-US", {
-                timeZone: userTimezone
-            });
-        } catch {
-            throw new AppError("Please provide a valid timezone", 400);
-        }
+        const trimmedName = validateName(name);
+        const normalizedEmail = validateEmail(email);
+        validatePassword(password);
+        const userTimezone = timezone === undefined
+            ? DEFAULT_TIMEZONE
+            : validateTimezone(timezone);
 
         // 5. Check whether email already exists
         const existingUser = await pool.query(
@@ -112,20 +84,15 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
     try {
+        assertRequestBody(req.body);
         const { email, password } = req.body;
 
-        // 1. Validate required fields
-        if (
-            typeof email !== "string" ||
-            typeof password !== "string" ||
-            !email.trim() ||
-            !password
-        ) {
+        if (email === undefined || password === undefined) {
             throw new AppError("Email and password are required", 400);
         }
 
-        // 2. Normalize email
-        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedEmail = validateEmail(email);
+        validatePassword(password);
 
         // 3. Find user
         const result = await pool.query(

@@ -1,12 +1,16 @@
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/AppError");
+const { validateUuid } = require("../utils/validators");
 
 const protect = (req, res, next) => {
     try {
         // 1. Read Authorization header
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        if (
+            typeof authHeader !== "string" ||
+            !/^Bearer\s+\S+$/.test(authHeader)
+        ) {
             throw new AppError(
                 "Authentication required. Please provide a valid token.",
                 401
@@ -14,17 +18,15 @@ const protect = (req, res, next) => {
         }
 
         // 2. Extract token
-        const token = authHeader.split(" ")[1];
-
-        if (!token) {
-            throw new AppError("Authentication token is missing", 401);
-        }
+        const [, token] = authHeader.match(/^Bearer\s+(\S+)$/);
 
         // 3. Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         // 4. Attach authenticated user information
-        if (!decoded.sub) {
+        try {
+            validateUuid(decoded.sub, "authentication user ID");
+        } catch {
             throw new AppError("Invalid authentication token", 401);
         }
 

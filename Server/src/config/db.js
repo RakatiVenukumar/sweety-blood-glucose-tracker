@@ -4,6 +4,10 @@ const { Pool } = require("pg");
 const fs = require("fs");
 const path = require("path");
 
+// PostgreSQL DATE values are date-only values, not UTC timestamps.
+const types = require("pg").types;
+types.setTypeParser(1082, (value) => value);
+
 // Load Supabase root certificate
 const caCertificate = fs.readFileSync(
     path.join(__dirname, "..", "..", "certs", "prod-supabase.cer"),

@@ -431,16 +431,82 @@ Tested using Thunder Client:
 
 ## 9. Pending Improvements
 
-The following items are intentionally deferred to later phases:
+The following items remain for later phases:
 
-- More comprehensive and centralized input validation.
-- User-timezone-aware date validation and date handling.
-- Consistent validation and error handling across all APIs.
 - Two-user RLS isolation testing and additional security verification.
 - Automated API testing.
 
-## 10. Completion Summary
+## Phase 6 – Validation and Backend Improvements (Completed)
 
-**Phase 5 is completed.** All five glucose
+### Implementation
 
+- Added reusable validators in `server/src/utils/validators.js` for request
+  bodies, names, emails, passwords, UUIDs, dates, time slots, glucose values,
+  and IANA timezones.
+- Updated authentication controllers to reject malformed request bodies,
+  validate input types consistently, and apply the default timezone only when
+  no timezone is supplied.
+- Updated reading CRUD controllers to reuse validation logic and retrieve the
+  authenticated user's saved timezone inside the RLS transaction.
+- Future reading dates are now checked against the user's local calendar date.
+- Strengthened JWT validation by requiring a valid UUID in the `sub` claim.
+- Configured the PostgreSQL driver to preserve `DATE` values as `YYYY-MM-DD`
+  strings instead of serializing them as UTC timestamps.
+
+### Manual testing status
+
+Code-level validation is complete. Thunder Client verification remains
+pending for malformed bodies, invalid input types, timezone-aware future dates,
+JWT claim validation, and date-only API responses.
+
+### Known limitations
+
+- Two-user RLS isolation testing and automated API tests remain pending.
+
+### Phase 6 – Validation and Backend Improvements: Testing Results
+
+#### Tests executed
+
+- JavaScript syntax checks for all modified backend files.
+- Module import and dependency resolution checks.
+- Backend startup using `node Server/server.js`.
+- 50 live API cases covering registration, login, reading validation, CRUD,
+  date serialization, malformed JSON, oversized bodies, and JWT handling.
+- Database verification for the dedicated Phase 6 test account.
+
+#### Passed
+
+- Registration and login success/error status handling.
+- Duplicate registration and duplicate reading handling.
+- Name, email, password, timezone, body-shape, date, time-slot, and glucose
+  value validation.
+- Timezone-aware today/future-date validation for `Asia/Kolkata`.
+- Reading CRUD responses preserve `YYYY-MM-DD` dates.
+- Missing, malformed, expired, wrong-scheme, and extra-token authentication
+  requests return `401`.
+- Password hash format, normalized email, and saved timezone were verified
+  for the test account.
+- Initial full run: 49/50 cases passed. After fixing invalid JWT subject
+  handling, the failed regression case passed.
+
+#### Bug discovered and fixed
+
+- A JWT with an invalid UUID `sub` claim incorrectly returned `400` because
+  the shared client-input UUID validator error propagated through the auth
+  middleware. Authentication middleware now maps that case to `401`.
+
+#### Blocked or skipped
+
+- Two-user RLS isolation testing remains scheduled for Phase 13.
+- A second timezone boundary test was not run because it requires a controlled
+  date-boundary setup.
+- Production-mode 500-response verification was not run.
+- Direct database reading-count verification without the transaction-local RLS
+  context was blocked by the expected RLS policy; no production data was
+  modified.
+
+#### Final verification status
+
+Phase 6 implementation and targeted verification pass. No unresolved Phase 6
+functional failures remain.
 
