@@ -510,3 +510,66 @@ JWT claim validation, and date-only API responses.
 Phase 6 implementation and targeted verification pass. No unresolved Phase 6
 functional failures remain.
 
+## Phase 7 – Reports APIs
+
+### Implementation
+
+Added authenticated report endpoints:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/reports/daily` | Current local day statistics and reading details |
+| GET | `/api/reports/monthly` | Current local month statistics, daily summaries, and slot counts |
+| GET | `/api/reports/previous-month` | Previous local month statistics, daily summaries, and slot counts |
+
+Report responses contain a `report` object with:
+
+- Daily: `date`, `total_readings`, `average_glucose`, `minimum_glucose`,
+  `maximum_glucose`, and `readings`.
+- Monthly periods: `month`, `year`, aggregate statistics,
+  `daily_summaries`, and `time_slot_counts`.
+- Empty periods return zero counts, null aggregate values, and empty arrays.
+
+### Architecture and timezone handling
+
+- Report routes use the existing JWT `protect` middleware.
+- Ownership comes only from `req.user.id`.
+- Every report query runs through `withTransaction(callback, req.user.id)`.
+- The user's saved timezone is retrieved inside the transaction.
+- Current and previous calendar boundaries are calculated from that timezone
+  and passed to parameterized PostgreSQL `DATE` predicates.
+- Aggregation is performed in PostgreSQL using `COUNT`, `AVG`, `MIN`, `MAX`,
+  and grouped JSON summaries. No report tables or schema changes were added.
+
+### Files
+
+- Created `server/src/controllers/reportController.js`.
+- Created `server/src/routes/reportRoutes.js`.
+- Modified `server/server.js` to mount `/api/reports`.
+
+### Testing results
+
+- Backend startup, syntax, and module import checks passed.
+- Health endpoint passed.
+- All three report endpoints rejected missing and invalid JWT authentication
+  with HTTP 401.
+- Empty daily, monthly, and previous-month reports returned HTTP 200 with
+  zero counts and empty collections.
+- Populated reports passed daily aggregates, monthly aggregates, previous-month
+  aggregates, local date/month labels, first/last previous-month boundaries,
+  and date/timezone checks.
+- Monthly slot grouping regression passed with three populated slots returning
+  three slot groups.
+- Test readings were created through the API and deleted afterward.
+- The first live run was blocked by launching the server from the repository
+  root, which loaded the wrong environment; it was rerun successfully from
+  `server/`.
+- One test assertion initially expected four slot groups although the fixture
+  populated three; the corrected regression passed. This was a test-harness
+  expectation issue, not an API defect.
+
+### Known limitations
+
+- Complete two-user RLS isolation testing remains scheduled for Phase 13.
+- Reports currently expose only the current and previous calendar periods
+  required by the assignment; arbitrary date-range filters are not included.
